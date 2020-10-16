@@ -1,10 +1,8 @@
 package com.lz.gateway.component;
 
 import com.alibaba.fastjson.JSONObject;
-import com.alibaba.nacos.common.utils.HttpMethod;
 import com.lz.gateway.config.WhiteListConfig;
 import com.lz.gateway.constants.SecurityConstants;
-import com.nimbusds.jose.JWSObject;
 import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
@@ -17,12 +15,9 @@ import org.springframework.security.web.server.authorization.AuthorizationContex
 import org.springframework.stereotype.Component;
 import org.springframework.util.AntPathMatcher;
 import org.springframework.util.PathMatcher;
-import org.springframework.util.StringUtils;
 import reactor.core.publisher.Mono;
 
-import java.util.Arrays;
 import java.util.HashSet;
-import java.util.Map;
 import java.util.Set;
 
 /**
@@ -36,7 +31,7 @@ import java.util.Set;
 @RequiredArgsConstructor
 public class AuthorizationManager implements ReactiveAuthorizationManager<AuthorizationContext> {
 
-    private final ReactiveRedisTemplate<String, Map<String, String>> redisTemplate;
+    private final ReactiveRedisTemplate<String, Object> reactiveRedisTemplate;
     private final WhiteListConfig whiteListConfig;
 
     @SneakyThrows
@@ -53,18 +48,23 @@ public class AuthorizationManager implements ReactiveAuthorizationManager<Author
 
 
         // token为空拒绝访问
-        String token = request.getHeaders().getFirst(SecurityConstants.JWT_TOKEN_HEADER);
-        if (StringUtils.isEmpty(token)) {
-            return Mono.just(new AuthorizationDecision(false));
-        }
+//        String token = request.getHeaders().getFirst(SecurityConstants.JWT_TOKEN_HEADER);
 
-        JWSObject jwsObject = JWSObject.parse(token);
-        log.info("jws: {}", jwsObject);
-        String payload = jwsObject.getPayload().toString();
-        log.info("payload: {}", payload);
+        request.getHeaders().forEach((k, v) -> {
+            log.info("headers k:{} , v: {}", k, v);
+        });
+
+//        if (StringUtils.isEmpty(token)) {
+//            return Mono.just(new AuthorizationDecision(false));
+//        }
+//
+//        JWSObject jwsObject = JWSObject.parse(token);
+//        log.info("jws: {}", jwsObject);
+//        String payload = jwsObject.getPayload().toString();
+//        log.info("payload: {}", payload);
 
         return mono
-//                .filter(Authentication::isAuthenticated)
+                .filter(Authentication::isAuthenticated)
                 .flatMapIterable(it -> {
                     log.info("Authentication: {}", JSONObject.toJSONString(it));
                     return it.getAuthorities();
@@ -74,16 +74,18 @@ public class AuthorizationManager implements ReactiveAuthorizationManager<Author
                     return it.getAuthority();
                 })
                 .any(roleId -> {
+                    log.info("用户角色信息：{}", roleId);
+
                     // 从缓存取资源权限角色关系列表
-                    Mono<Map<String, String>> mapMono = redisTemplate.opsForValue().get(SecurityConstants.RESOURCE_ROLES_KEY);
+                    Mono<Boolean> isKey = reactiveRedisTemplate.hasKey(SecurityConstants.RESOURCE_ROLES_KEY);
+                    Mono mapMono = reactiveRedisTemplate.opsForValue().get(SecurityConstants.RESOURCE_ROLES_KEY);
+//                    Mono<Map<String, String>> mapMono = valueOperations.get(SecurityConstants.RESOURCE_ROLES_KEY);
+
+                    isKey.subscribe(System.err::println);
 
                     // 请求路径匹配到的资源需要的角色权限集合authorities统计
                     Set<String> authorities = new HashSet<>();
-                    mapMono.subscribe(map -> map.forEach((k, v) -> {
-                        if (pathMatcher.match(k, path)) {
-                            authorities.addAll(Arrays.asList(v.split(",")));
-                        }
-                    }));
+                    mapMono.subscribe(System.err::println);
 
                     // roleId是请求用户的角色(格式:ROLE_{roleId})，authorities是请求资源所需要角色的集合
                     log.info("访问路径：{}", path);
@@ -93,5 +95,35 @@ public class AuthorizationManager implements ReactiveAuthorizationManager<Author
                 })
                 .map(AuthorizationDecision::new)
                 .defaultIfEmpty(new AuthorizationDecision(true));
+
+
+//        return mono
+//                .flatMapIterable(it -> {
+//                    log.info("Authentication: {}", JSONObject.toJSONString(it));
+//                    return it.getAuthorities();
+//                })
+//                .map(it -> {
+//                    log.info("GrantedAuthority: {}", JSONObject.toJSONString(it));
+//                    return it.getAuthority();
+//                })
+//                .any(roleId -> {
+//                    // roleId是请求用户的角色(格式:ROLE_{roleId})，authorities是请求资源所需要角色的集合
+//                    log.info("访问路径：{}", path);
+//                    log.info("用户角色信息：{}", roleId);
+//                    return true;
+//                })
+//                .map(it -> {
+//                    log.info("AuthorizationDecision: {}", it);
+//                    return new AuthorizationDecision(it);
+//                })
+//                .defaultIfEmpty(new AuthorizationDecision(true));
+//        return mono
+//                .filter(Authentication::isAuthenticated)
+//                .flatMapIterable(Authentication::getAuthorities)
+//                .flatMap()
+//                .map(it -> {
+//                    log.info("Authentication: {}", JSONObject.toJSONString(it));
+//                    return new AuthorizationDecision(true);
+//                }).defaultIfEmpty(new AuthorizationDecision(true));
     }
 }

@@ -64,7 +64,9 @@ spring:
       resourceserver:
         jwt:
           # 获取JWT验签公钥请求路径
-          jwk-set-uri: http://localhost:8087/oauth/token_key
+#          jwk-set-uri: http://localhost:8087/oauth/token_key
+          jwk-set-uri: http://localhost:8087/rsa/publicKey
+#          issuer-uri: http://localhost:8087/oauth/check_token
 
 oauth:
   white-list:
