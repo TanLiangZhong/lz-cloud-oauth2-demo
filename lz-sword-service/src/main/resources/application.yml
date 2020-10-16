@@ -1,0 +1,20 @@
+server:
+  port: 8088
+
+spring:
+  application:
+    name: @artifactId@
+  profiles:
+    active: ${profile.name}
+
+  # 配置/注册中心
+  cloud:
+    nacos:
+      discovery:
+        enabled: true
+        server-addr: ${nacos.server-addr}
+        namespace: ${nacos.namespace}
+      config:
+        server-addr: ${nacos.server-addr}
+        namespace: ${nacos.namespace}
+        file-extension: yaml

@@ -1,0 +1,87 @@
+server:
+  port: 8087
+
+spring:
+  application:
+    name: @artifactId@
+  profiles:
+    active: ${profile.name}
+
+  # 配置/注册中心
+  cloud:
+    nacos:
+      discovery:
+        enabled: true
+        server-addr: ${nacos.server-addr}
+        namespace: ${nacos.namespace}
+      config:
+        server-addr: ${nacos.server-addr}
+        namespace: ${nacos.namespace}
+        file-extension: yaml
+
+  datasource:
+    type: com.alibaba.druid.pool.DruidDataSource
+    druid:
+      driver-class-name: com.mysql.cj.jdbc.Driver
+      url: jdbc:mysql://39.98.126.186:3306/safety_oauth2_dev?useUnicode=true&characterEncoding=UTF-8&serverTimezone=Asia/Shanghai
+      username: mysql
+      password: P@ssw0rd2020
+      initial-size: 10
+      max-active: 100
+      min-idle: 10
+      max-wait: 60000
+      pool-prepared-statements: true
+      max-pool-prepared-statement-per-connection-size: 20
+      time-between-eviction-runs-millis: 60000
+      min-evictable-idle-time-millis: 300000
+      test-while-idle: true
+      test-on-borrow: false
+      test-on-return: false
+      stat-view-servlet:
+        enabled: true
+        url-pattern: /druid/*
+        login-username: admin
+        login-password: admin
+      filter:
+        stat:
+          log-slow-sql: true
+          slow-sql-millis: 1000
+          merge-sql: false
+        wall:
+          config:
+            multi-statement-allow: true
+
+  redis:
+    database: 7
+    host: 39.98.126.186
+    port: 6379
+    password: 123520
+    timeout: 6000ms
+    lettuce:
+      pool:
+        max-active: 1000 #最大连接
+        max-idle: 100 #最大空闲
+        min-idle: 50 #最小空闲连接数
+
+  jackson:
+    default-property-inclusion: non_null #忽略空
+    date-format: yyyy-MM-dd HH:mm:ss # 全局设置@JsonFormat的格式pattern
+    time-zone: GMT+8  # 设置全局时区
+    deserialization:
+      FAIL_ON_UNKNOWN_PROPERTIES: false #json中含pojo不存在属性时是否失败报错
+
+  mvc:
+    throw-exception-if-no-handler-found: true #404 抛异常NoHandlerFoundException
+
+logging:
+  config: classpath:logback-spring.xml
+  file:
+    path: /home/logs
+    name: ${spring.application.name}
+  level:
+    root: info
+    com.jt.satety.taskcenter: debug
+    org.springframework.web.servlet.mvc.method.annotation.RequestMappingHandlerMapping: trace
+    org.springframework: info
+    io.swagger: error
+

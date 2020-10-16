@@ -1,0 +1,72 @@
+server:
+  port: 8081
+
+spring:
+  application:
+    name: @artifactId@
+  profiles:
+    active: ${profile.name}
+
+  # 配置/注册中心
+  cloud:
+    nacos:
+      discovery:
+        enabled: true
+        server-addr: ${nacos.server-addr}
+        namespace: ${nacos.namespace}
+      config:
+        server-addr: ${nacos.server-addr}
+        namespace: ${nacos.namespace}
+        file-extension: yaml
+
+    gateway:
+      discovery:
+        locator:
+          enabled: true
+      routes:
+        - id: lz-oauth2-service
+          uri: lb://lz-oauth2-service
+          predicates:
+            - Path=/oauth2/**
+          filters:
+            - StripPrefix=1
+        - id: lz-sword-service
+          uri: lb://lz-sword-service
+          predicates:
+            - Path=/sword/**
+          filters:
+            - StripPrefix=1
+
+  redis:
+    database: 7
+    host: 39.98.126.186
+    port: 6379
+    password: 123520
+    timeout: 6000ms
+    lettuce:
+      pool:
+        max-active: 1000 #最大连接
+        max-idle: 100 #最大空闲
+        min-idle: 50 #最小空闲连接数
+
+  jackson:
+    default-property-inclusion: non_null #忽略空
+    date-format: yyyy-MM-dd HH:mm:ss # 全局设置@JsonFormat的格式pattern
+    time-zone: GMT+8  # 设置全局时区
+    deserialization:
+      FAIL_ON_UNKNOWN_PROPERTIES: false #json中含pojo不存在属性时是否失败报错
+
+  mvc:
+    throw-exception-if-no-handler-found: true #404 抛异常NoHandlerFoundException
+
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          # 获取JWT验签公钥请求路径
+          jwk-set-uri: http://localhost:8087/oauth/token_key
+
+oauth:
+  white-list:
+    urls:
+      - /oauth2/**
