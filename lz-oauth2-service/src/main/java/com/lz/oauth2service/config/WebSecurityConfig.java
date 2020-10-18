@@ -7,10 +7,8 @@ import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configuration.WebSecurityConfigurerAdapter;
-import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.factory.PasswordEncoderFactories;
 import org.springframework.security.crypto.password.PasswordEncoder;
-import org.springframework.security.oauth2.provider.token.AuthorizationServerTokenServices;
 
 /**
  * 网络安全配置
@@ -22,12 +20,19 @@ import org.springframework.security.oauth2.provider.token.AuthorizationServerTok
 @EnableWebSecurity
 public class WebSecurityConfig extends WebSecurityConfigurerAdapter {
 
+    private final String[] whiteList = {"/rsa/publicKey",
+            "/oauth/**",
+            "/actuator/**",
+            "/v2/api-docs",
+            "/doc.html",
+    };
+
     @Override
     protected void configure(HttpSecurity http) throws Exception {
         http
                 .authorizeRequests().requestMatchers(EndpointRequest.toAnyEndpoint()).permitAll()
                 .and()
-                .authorizeRequests().antMatchers("/rsa/publicKey", "/oauth/**").permitAll().anyRequest().authenticated()
+                .authorizeRequests().antMatchers(whiteList).permitAll().anyRequest().authenticated()
                 .and()
                 .csrf().disable();
     }

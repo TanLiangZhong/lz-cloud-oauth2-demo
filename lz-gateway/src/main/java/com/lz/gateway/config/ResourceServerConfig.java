@@ -15,7 +15,6 @@ import org.springframework.security.config.web.server.ServerHttpSecurity;
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationConverter;
 import org.springframework.security.oauth2.server.resource.authentication.JwtGrantedAuthoritiesConverter;
-import org.springframework.security.oauth2.server.resource.authentication.JwtReactiveAuthenticationManager;
 import org.springframework.security.oauth2.server.resource.authentication.ReactiveJwtAuthenticationConverterAdapter;
 import org.springframework.security.web.server.SecurityWebFilterChain;
 import reactor.core.publisher.Mono;
@@ -40,23 +39,21 @@ public class ResourceServerConfig {
     public SecurityWebFilterChain securityWebFilterChain(ServerHttpSecurity http) {
         http.oauth2ResourceServer()
                 .jwt()
-                .jwtAuthenticationConverter(jwtAuthenticationConverter());
-
-
-        // 自定义处理JWT请求头过期或签名错误的结果
-//        http.oauth2ResourceServer().authenticationEntryPoint(customServerAuthenticationEntryPoint);
+                .jwtAuthenticationConverter(jwtAuthenticationConverter()).
+                // 自定义处理JWT请求头过期或签名错误的结果
+                and().authenticationEntryPoint(customServerAuthenticationEntryPoint);
 
         http.authorizeExchange()
                 .pathMatchers(whiteListConfig.getUrls().toArray(new String[0])).permitAll()
-//                .pathMatchers("/**").permitAll()
                 .pathMatchers(HttpMethod.OPTIONS).permitAll()
                 .anyExchange().access(authorizationManager)
                 .and()
                 .exceptionHandling()
-                .accessDeniedHandler(customServerAccessDeniedHandler) // 处理未授权
-                .authenticationEntryPoint(customServerAuthenticationEntryPoint) //处理未认证
+                // 访问拒绝, 无权访问
+                .accessDeniedHandler(customServerAccessDeniedHandler)
+                // 处理未认证, 未登录, token 无效
+                .authenticationEntryPoint(customServerAuthenticationEntryPoint)
                 .and().csrf().disable();
-
         return http.build();
     }
 
